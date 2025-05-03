@@ -2,11 +2,36 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 
 const exercisesA = [
-  { name: "Bodyweight Squats", instructions: "Stand with feet shoulder-width, squat down, then up.", setsReps: "3 x 15" },
-  { name: "Glute Bridges", instructions: "Lie back, lift hips by squeezing glutes, lower.", setsReps: "3 x 12" },
-  { name: "Reverse Lunges", instructions: "Step back, lower knee, return; alternate.", setsReps: "3 x 10 each leg" },
-  { name: "Wall Sit", instructions: "Lean back against wall, knees 90°, hold.", setsReps: "3 x 30s" },
-  { name: "Standing Calf Raises", instructions: "Rise onto toes, lower.", setsReps: "3 x 15" }
+  { 
+    name: "Bodyweight Squats", 
+    instructions: "Stand with feet shoulder-width, squat down, then up.", 
+    setsReps: "3 x 15",
+    image: "/exercises/bodyweight-squats.jpg"
+  },
+  { 
+    name: "Glute Bridges", 
+    instructions: "Lie back, lift hips by squeezing glutes, lower.", 
+    setsReps: "3 x 12",
+    image: "/exercises/glute-bridges.jpg"
+  },
+  { 
+    name: "Reverse Lunges", 
+    instructions: "Step back, lower knee, return; alternate.", 
+    setsReps: "3 x 10 each leg",
+    image: "/exercises/reverse-lunges.jpg"
+  },
+  { 
+    name: "Wall Sit", 
+    instructions: "Lean back against wall, knees 90°, hold.", 
+    setsReps: "3 x 30s",
+    image: "/exercises/wall-sit.jpg"
+  },
+  { 
+    name: "Standing Calf Raises", 
+    instructions: "Rise onto toes, lower.", 
+    setsReps: "3 x 15",
+    image: "/exercises/calf-raises.jpg"
+  }
 ];
 
 export function WorkoutA() {
@@ -37,7 +62,21 @@ export function WorkoutA() {
       <h1 className="text-xl font-bold text-pink-700 mb-2">Workout A – Step {index + 1} of {exercisesA.length}</h1>
       <h2 className="text-lg font-semibold text-gray-800 mb-1">{ex.name}</h2>
       <p className="text-sm text-gray-600 mb-4">{ex.setsReps}</p>
-      <div className="w-full h-32 bg-pink-50 rounded mb-4 flex items-center justify-center text-pink-300">[Exercise Media]</div>
+      <div className="w-full h-48 bg-pink-50 rounded mb-4 flex items-center justify-center overflow-hidden">
+        {ex.image ? (
+          <img 
+            src={ex.image} 
+            alt={ex.name} 
+            className="object-cover w-full h-full"
+            onError={(e) => {
+              e.target.onerror = null;
+              e.target.src = "/CoreBloom-logo.jpg";
+            }}
+          />
+        ) : (
+          <div className="text-pink-300">[Exercise Image Not Available]</div>
+        )}
+      </div>
       <p className="text-gray-700 mb-6">{ex.instructions}</p>
       <div className="flex justify-center gap-4">
         {index > 0 && <button onClick={back} className="bg-gray-200 px-4 py-2 rounded-xl hover:bg-gray-300">Back</button>}
