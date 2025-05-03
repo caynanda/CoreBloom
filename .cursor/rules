@@ -1,0 +1,193 @@
+Always Reference the README
+
+Before generating or updating code, ensure the feature is listed in the README’s “MVP Features” or “Roadmap.”
+
+New features must first be approved and added to the README spec.
+
+Follow the File & Folder Structure Exactly
+
+All components go under src/components/ named as specified (Onboarding.jsx, Home.jsx, etc.).
+
+Configuration files stay at project root (tailwind.config.js, postcss.config.js, .gitignore).
+
+Assets live in src/assets/ and referenced by relative paths.
+
+Styling & Theming
+
+Use Tailwind CSS utility classes exclusively—no inline CSS or other frameworks.
+
+Use only the defined brand colors:
+
+Petal Pink: #FADADD
+
+Blossom: #DB2777
+
+Mint Green: #D4EADF
+
+Warm Neutral: #F5F1EA
+
+Soft Gray: #9CA3AF
+
+Adhere to the border‐radius, shadow, and spacing conventions in the Brand Guidelines.
+
+Brand Guidelines:
+# CoreBloom Brand Guidelines
+
+A comprehensive guide to the visual and verbal identity of CoreBloom, the postpartum strength training app.
+
+---
+
+## 1. Logo & Symbol
+
+* **Primary Logo**: A stylized blooming flower with three petals, symbolizing the three core workouts (A, B, C). The petals overlap slightly, creating a soft, organic shape.
+* **Logo Usage**:
+
+  * **Full Logo**: Flower symbol + wordmark “CoreBloom” in chosen font.
+  * **Symbol Only**: Use the flower icon alone for app icon, social avatars, and small-format needs.
+* **Clear Space**: Maintain at least the height of one petal around the logo on all sides.
+* **Minimum Size**: 32px height for digital, 0.5in for print.
+
+---
+
+## 2. Color Palette
+
+| Name             | Hex     | Usage                         |
+| ---------------- | ------- | ----------------------------- |
+| **Petal Pink**   | #FADADD | Primary buttons, highlights   |
+| **Blossom**      | #DB2777 | Active states, icons, accents |
+| **Mint Green**   | #D4EADF | Secondary backgrounds, cards  |
+| **Warm Neutral** | #F5F1EA | Page backgrounds, modals      |
+| **Soft Gray**    | #9CA3AF | Text, secondary UI elements   |
+
+Use high-contrast combinations for accessibility: Blossom (#DB2777) on Warm Neutral (#F5F1EA) for headings.
+
+---
+
+## 3. Typography
+
+* **Primary Font**: **Poppins** (Google Font)
+
+  * **Weights**: 400 (Regular), 600 (SemiBold), 700 (Bold)
+  * **Usage**:
+
+    * **Headlines**: Poppins 600, 24–32px
+    * **Body Text**: Poppins 400, 14–18px
+    * **Buttons & Labels**: Poppins 600, 16px
+* **Fallbacks**: `-apple-system`, `BlinkMacSystemFont`, `Segoe UI`, `Roboto`, `Helvetica Neue`, `Arial`, `sans-serif`
+
+---
+
+## 4. Iconography
+
+* **Style**: Simple line icons with rounded ends, consistent stroke weight.
+* **Library**: **lucide-react** for digital use.
+* **Color**: Use **Blossom** for active icons, **Soft Gray** for inactive.
+
+---
+
+## 5. Imagery & Illustrations
+
+* **Photography**:
+
+  * Natural, warm lighting.
+  * Real postpartum bodies in motion.
+  * Candid, supportive, empowering moments.
+* **Illustrations**:
+
+  * Flat, minimalist shapes.
+  * Brand palette (use exclusively the defined colors).
+  * Emphasize gentle curves and motion lines.
+
+---
+
+## 6. Tone of Voice
+
+* **Personality**: Warm, encouraging, empowering.
+* **Style**:
+
+  * Address the user directly (“you”).
+  * Keep messages short and positive.
+  * Sprinkle friendly emojis sparingly (🌸, 💪).
+* **Example**:
+
+  > “You’re doing great—one step at a time!”
+
+---
+
+## 7. UI Components
+
+* **Buttons**: Rounded corners (2xl), solid Petal Pink background, white text.
+* **Cards**: Mint Green background or white, rounded-2xl, soft shadow.
+* **Inputs**: White backgrounds, 1px Soft Gray border, rounded-xl, focus ring Blossom.
+* **Tabs**: Bottom nav with icons; active tab in Blossom, inactive in Soft Gray.
+
+---
+
+## 8. Usage Examples
+
+* **App Icon**: Symbol only on a Mint Green square, rounded corners.
+* **Splash Screen**: Full logo centered on Warm Neutral.
+* **Marketing Graphic**:
+
+  * Left: Illustration of a mom performing an exercise.
+  * Right: Headline in Poppins 700, Blossom color.
+
+---
+
+*These guidelines ensure consistency and brand recognition across all CoreBloom touchpoints.*
+
+
+Component API & Behavior
+
+All state lives in React useState or useEffect hooks.
+
+Persist user data only to localStorage keys profile and workoutsDone; never fetch external APIs.
+
+Navigation uses React Router v6 <Routes>, <Route>, and <Outlet> exactly.
+
+Bottom tab bar must use <NavLink> or <Link> with active styling matching Brand Guidelines.
+
+Naming & Exports
+
+Components must default‑export a single function matching filename (e.g. export default function WorkoutA()).
+
+Files and component names are PascalCase; CSS classes remain lowercase hyphen‑separated as Tailwind utilities.
+
+Commit & Code Style
+
+Generate code with 2‑space indentation, single quotes for strings, semicolons on every statement.
+
+Include a brief JSDoc comment on each component file summarizing its purpose.
+
+When creating or modifying code, include a one‑sentence “chore:” or “feat:” summary at the top of the change.
+
+Error Handling & Guards
+
+If reading localStorage returns null or malformed JSON, fallback gracefully (e.g. || '{}' or || '[]').
+
+In nested workout routes, if the user refreshes mid‑workout, ensure the component still renders without crashing.
+
+Testing & Validation
+
+After each new component or route, verify manually (or via a simple smoke test) that:
+
+Onboarding redirects correctly when profile exists or not.
+
+Home cycles workouts A→B→C based on count of workoutsDone.
+
+“Mark Complete” truly updates localStorage.
+
+For any UI changes, test at both desktop and a 375px‑wide mobile viewport.
+
+No Scope Creep
+
+Do not add features beyond the MVP unless explicitly requested.
+
+Any roadmap items must be scoped in a separate issue or added to the README before implementation.
+
+Documentation First
+
+For any new feature, update the README spec with the exact behaviour and UI mockup first.
+
+Only after the README is updated should the AI generate code for that feature.
+
