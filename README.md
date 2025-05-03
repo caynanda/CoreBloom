@@ -147,4 +147,4 @@ corebloom/
 
 ---
 
-© 2025 CoreBloom
+© 2025 CoreBloom# CoreBloom
