@@ -28,6 +28,8 @@ function Profile() {
   const [showMeasurements, setShowMeasurements] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [measurementHistory, setMeasurementHistory] = useState([]);
+  const [hasMeasurements, setHasMeasurements] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -45,6 +47,14 @@ function Profile() {
               ...(profileData.measurements || {})
             }
           }));
+          
+          // Check if user has any measurements
+          const hasAnyMeasurement = profileData.measurements && Object.values(profileData.measurements).some(m => m && m !== '');
+          setHasMeasurements(hasAnyMeasurement || (profileData.weight && profileData.weight !== ''));
+          
+          // In a real implementation, you would fetch measurement history:
+          // const history = await fetchMeasurementHistory();
+          // setMeasurementHistory(history);
         } else {
           // Handle case where profile doesn't exist yet (e.g., new user)
           console.log("No profile data found on backend.");
@@ -150,6 +160,10 @@ function Profile() {
               ...(profileData.measurements || {})
             }
           }));
+          
+          // Check if user has any measurements
+          const hasAnyMeasurement = profileData.measurements && Object.values(profileData.measurements).some(m => m && m !== '');
+          setHasMeasurements(hasAnyMeasurement || (profileData.weight && profileData.weight !== ''));
         } else {
           console.log("No profile data found after cancel, resetting to defaults?");
           // Or potentially refetch defaults if needed
@@ -178,6 +192,63 @@ function Profile() {
     }
   };
 
+  // Helper to render progress card
+  const renderProgressCard = () => {
+    if (!hasMeasurements) {
+      return (
+        <div className="bg-mint-green bg-opacity-20 p-4 rounded-lg mb-6 text-center">
+          <h3 className="text-lg font-medium text-blossom mb-2">Track Your Progress</h3>
+          <p className="text-soft-gray mb-3">
+            Logging your measurements helps track your postpartum fitness journey. Add your measurements to see progress over time.
+          </p>
+          <button 
+            onClick={() => { setIsEditing(true); setShowMeasurements(true); }}
+            className="text-blossom text-sm font-medium hover:underline"
+          >
+            Start Tracking Now →
+          </button>
+        </div>
+      );
+    }
+    
+    // Basic progress display - in a real app, you would show charts or more detailed history
+    return (
+      <div className="bg-white p-4 rounded-lg shadow-md mb-6">
+        <h3 className="text-lg font-medium text-blossom mb-3">Your Progress</h3>
+        <div className="grid grid-cols-2 gap-4">
+          {profile.weight && (
+            <div className="bg-mint-green bg-opacity-20 p-3 rounded-md">
+              <span className="block text-soft-gray text-sm">Current Weight</span>
+              <span className="block text-blossom text-lg font-medium">{profile.weight} {profile.weightUnit}</span>
+            </div>
+          )}
+          
+          {profile.measurements.waist && (
+            <div className="bg-mint-green bg-opacity-20 p-3 rounded-md">
+              <span className="block text-soft-gray text-sm">Current Waist</span>
+              <span className="block text-blossom text-lg font-medium">{profile.measurements.waist} {profile.measurementUnit}</span>
+            </div>
+          )}
+          
+          {profile.measurements.hips && (
+            <div className="bg-mint-green bg-opacity-20 p-3 rounded-md">
+              <span className="block text-soft-gray text-sm">Current Hips</span>
+              <span className="block text-blossom text-lg font-medium">{profile.measurements.hips} {profile.measurementUnit}</span>
+            </div>
+          )}
+        </div>
+        <div className="text-center mt-4">
+          <button 
+            onClick={() => { setIsEditing(true); setShowMeasurements(true); }}
+            className="text-blossom text-sm font-medium hover:underline"
+          >
+            Update Measurements →
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   if (isLoading) {
     return <div className="p-6 text-center">Loading profile...</div>;
   }
@@ -191,6 +262,9 @@ function Profile() {
           {error}
         </div>
       )}
+      
+      {/* Add Progress Card */}
+      {!isEditing && renderProgressCard()}
 
       <form onSubmit={handleSave} className="bg-white p-6 rounded-lg shadow-md space-y-4">
         <div>

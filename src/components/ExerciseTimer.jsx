@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-export function ExerciseTimer({ duration = 30, onComplete }) {
+export function ExerciseTimer({ duration = 30, onComplete, currentSet = 1, totalSets = 1 }) {
   const [timeLeft, setTimeLeft] = useState(duration);
   const [isActive, setIsActive] = useState(false);
   const timerRef = useRef(null);
@@ -10,6 +10,11 @@ export function ExerciseTimer({ duration = 30, onComplete }) {
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, []);
+
+  // Reset timer when duration changes
+  useEffect(() => {
+    setTimeLeft(duration);
+  }, [duration]);
 
   useEffect(() => {
     if (timeLeft === 0) {
@@ -51,35 +56,38 @@ export function ExerciseTimer({ duration = 30, onComplete }) {
 
   return (
     <div className="mt-2 mb-4">
-      <div className="text-2xl font-semibold text-pink-600 mb-2">
+      <div className="text-2xl font-semibold text-blossom mb-2">
         {formatTime(timeLeft)}
+      </div>
+      <div className="text-sm text-soft-gray mb-2">
+        Set {currentSet} of {totalSets}
       </div>
       <div className="flex justify-center gap-2">
         {!isActive ? (
           <button 
             onClick={startTimer}
-            className="bg-pink-500 text-white px-4 py-1 rounded-lg hover:bg-pink-600"
+            className="bg-petal-pink text-black px-4 py-1 rounded-lg hover:bg-blossom hover:text-white"
           >
             {timeLeft === duration ? 'Start' : 'Resume'}
           </button>
         ) : (
           <button 
             onClick={pauseTimer}
-            className="bg-gray-500 text-white px-4 py-1 rounded-lg hover:bg-gray-600"
+            className="bg-soft-gray text-white px-4 py-1 rounded-lg hover:opacity-80"
           >
             Pause
           </button>
         )}
         <button 
           onClick={resetTimer}
-          className="bg-gray-300 text-gray-700 px-4 py-1 rounded-lg hover:bg-gray-400"
+          className="bg-mint-green text-black px-4 py-1 rounded-lg hover:opacity-80"
         >
           Reset
         </button>
       </div>
-      <div className="w-full bg-gray-200 h-2 rounded-full mt-2">
+      <div className="w-full bg-warm-neutral h-2 rounded-full mt-2">
         <div 
-          className="bg-pink-500 h-2 rounded-full transition-all duration-300" 
+          className="bg-blossom h-2 rounded-full transition-all duration-300" 
           style={{ width: `${(timeLeft / duration) * 100}%` }}
         />
       </div>

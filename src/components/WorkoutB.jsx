@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
+import ExerciseTimer from './ExerciseTimer';
 
 const exercisesB = [
   { 
@@ -69,16 +70,26 @@ export function WorkoutB() {
   };
 
   const complete = () => {
+    // Save to standard localStorage
     const prev = JSON.parse(localStorage.getItem('workoutsDone') || '[]');
     prev.push({ type: 'B', timestamp: new Date().toISOString() });
     localStorage.setItem('workoutsDone', JSON.stringify(prev));
+    
+    // Also save to user-specific storage
+    const currentUser = localStorage.getItem('current_user');
+    if (currentUser) {
+      const userWorkouts = JSON.parse(localStorage.getItem(`workoutsDone_${currentUser}`) || '[]');
+      userWorkouts.push({ type: 'B', timestamp: new Date().toISOString() });
+      localStorage.setItem(`workoutsDone_${currentUser}`, JSON.stringify(userWorkouts));
+    }
+    
     setCompleted(true);
   };
 
   if (completed) {
     return (
       <div className="p-4 text-center">
-        <div className="text-pink-600 text-xl mb-4">Great job! 🎉</div>
+        <div className="text-blossom text-xl mb-4">Great job! 🎉</div>
         <RouterLink to="/" className="btn-pink">Back Home</RouterLink>
       </div>
     );
@@ -86,12 +97,11 @@ export function WorkoutB() {
 
   return (
     <div className="p-4 text-center">
-      <h1 className="text-xl font-bold text-pink-700 mb-2">Workout B – Step {index + 1} of {exercisesB.length}</h1>
-      <h2 className="text-lg font-semibold text-gray-800 mb-1">{ex.name}</h2>
-      <p className="text-sm text-gray-600 mb-1">{ex.setsReps}</p>
-      <p className="text-sm font-medium text-pink-600 mb-4">Set {currentSet} of {totalSets}</p>
+      <h1 className="text-xl font-bold text-blossom mb-2">Workout B – Step {index + 1} of {exercisesB.length}</h1>
+      <h2 className="text-lg font-semibold text-soft-gray mb-1">{ex.name}</h2>
+      <p className="text-sm text-soft-gray mb-1">{ex.setsReps}</p>
       
-      <div className="w-full h-48 bg-pink-50 rounded mb-4 flex items-center justify-center overflow-hidden">
+      <div className="w-full h-48 bg-petal-pink bg-opacity-30 rounded mb-4 flex items-center justify-center overflow-hidden">
         {ex.image ? (
           <img 
             src={ex.image} 
@@ -103,14 +113,23 @@ export function WorkoutB() {
             }}
           />
         ) : (
-          <div className="text-pink-300">[Exercise Image Not Available]</div>
+          <div className="text-petal-pink">[Exercise Image Not Available]</div>
         )}
       </div>
       
-      <p className="text-gray-700 mb-4">{ex.instructions}</p>
+      <p className="text-soft-gray mb-4">{ex.instructions}</p>
+      
+      {ex.isTimed && (
+        <ExerciseTimer 
+          duration={ex.duration} 
+          onComplete={nextSet}
+          currentSet={currentSet}
+          totalSets={totalSets}
+        />
+      )}
       
       <div className="flex justify-center gap-4">
-        {index > 0 && <button onClick={back} className="bg-gray-200 px-4 py-2 rounded-xl hover:bg-gray-300">Back</button>}
+        {index > 0 && <button onClick={back} className="bg-warm-neutral px-4 py-2 rounded-xl hover:bg-warm-neutral hover:bg-opacity-70">Back</button>}
         
         {index < exercisesB.length - 1 || currentSet < totalSets ? (
           <button 
