@@ -1,24 +1,70 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+// import { getCurrentUser, logoutUser } from '../firebase/auth';
+// import { getUserProfile, updateUserProfile, saveMeasurementHistory } from '../firebase/user';
+import { fetchUserProfile, updateUserProfile, saveMeasurement, logoutUser } from '../services/api'; // Import API functions
 
 function Profile() {
   const [profile, setProfile] = useState({ 
     name: '', 
     recoveryNotes: '', 
     reminders: false, 
-    trainingPhase: 'Phase 1' 
+    trainingPhase: 'Phase 1',
+    weight: '',
+    weightUnit: 'kg',
+    height: '',
+    heightUnit: 'cm',
+    measurements: {
+      arms: '',
+      chest: '',
+      waist: '',
+      hips: '',
+      thighs: ''
+    },
+    measurementUnit: 'cm'
   });
   const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
+  const [showMeasurements, setShowMeasurements] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Load profile data from localStorage
-    const storedProfile = JSON.parse(localStorage.getItem('profile') || '{}');
-    // Merge with defaults to ensure all fields are present
-    setProfile(prev => ({ ...prev, ...storedProfile }));
-    setIsLoading(false);
-  }, []);
+    const loadProfile = async () => {
+      setIsLoading(true); // Set loading true at the start
+      setError(''); // Clear previous errors
+      try {
+        const profileData = await fetchUserProfile(); 
+        if (profileData) {
+          setProfile(prevProfile => ({ // Merge fetched data with defaults
+            ...prevProfile, // Keep default structure
+            ...profileData, // Overwrite with fetched data
+            measurements: { // Ensure measurements object exists and merge
+              ...prevProfile.measurements,
+              ...(profileData.measurements || {})
+            }
+          }));
+        } else {
+          // Handle case where profile doesn't exist yet (e.g., new user)
+          console.log("No profile data found on backend.");
+          // Keep default profile state
+        }
+      } catch (err) {
+        console.error('Error loading profile:', err);
+        setError(err.message || 'Failed to load profile data');
+        // If profile fetch fails (e.g., 401 Unauthorized), redirect to login
+        if (err.response?.status === 401) {
+          logoutUser(); // Clear local token
+          navigate('/login');
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadProfile();
+  }, [navigate]);
 
   const handleInputChange = (event) => {
     const { name, value, type, checked } = event.target;
@@ -28,23 +74,108 @@ function Profile() {
     }));
   };
 
-  const handleSave = (event) => {
+  const handleMeasurementChange = (event) => {
+    const { name, value } = event.target;
+    setProfile(prevProfile => ({
+      ...prevProfile,
+      measurements: {
+        ...prevProfile.measurements,
+        [name]: value
+      }
+    }));
+  };
+
+  const handleSave = async (event) => {
     event.preventDefault();
     if (profile.name.trim() === '') {
-      alert('Name cannot be empty.');
+      setError('Name cannot be empty.');
       return;
     }
-    localStorage.setItem('profile', JSON.stringify(profile));
-    setIsEditing(false);
-    // Optional: Show a success message
-    alert('Profile updated successfully!'); 
+
+    setSaving(true);
+    setError('');
+    
+    try {
+      // Prepare data to send (only send relevant fields)
+      const profileToUpdate = { ...profile }; 
+
+      // Save profile data via API
+      await updateUserProfile(profileToUpdate); 
+
+      // Save measurement history if measurements are provided
+      const hasMeasurements = Object.values(profile.measurements).some(m => m && m !== '');
+      if (hasMeasurements) {
+        // Prepare measurement data (ensure numbers are numbers)
+        const measurementData = {
+          measurements: { ...profile.measurements },
+          weight: profile.weight ? parseFloat(profile.weight) : null,
+          weightUnit: profile.weightUnit,
+          measurementUnit: profile.measurementUnit
+        };
+        // Remove null/empty measurement fields before sending if needed
+        Object.keys(measurementData.measurements).forEach(key => {
+          if (!measurementData.measurements[key]) {
+              delete measurementData.measurements[key];
+          }
+        });
+        await saveMeasurement(measurementData); 
+      }
+
+      setIsEditing(false);
+      alert('Profile updated successfully!'); 
+    } catch (err) {
+      console.error('Error saving profile:', err);
+      setError(err.message || 'Failed to save profile data');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleCancel = () => {
-    // Reload data from storage to discard changes
-    const storedProfile = JSON.parse(localStorage.getItem('profile') || '{}');
-    setProfile(prev => ({ ...prev, ...storedProfile }));
     setIsEditing(false);
+    setError('');
+    
+    // Reload profile data
+    const loadProfile = async () => {
+      setIsLoading(true); // Indicate loading while refetching
+      setError('');
+      try {
+        const profileData = await fetchUserProfile();
+        if (profileData) {
+          setProfile(prevProfile => ({
+            ...prevProfile,
+            ...profileData,
+            measurements: {
+              ...prevProfile.measurements,
+              ...(profileData.measurements || {})
+            }
+          }));
+        } else {
+          console.log("No profile data found after cancel, resetting to defaults?");
+          // Or potentially refetch defaults if needed
+        }
+      } catch (err) {
+        console.error('Error loading profile:', err);
+        setError(err.message || 'Failed to reload profile data after cancel');
+        // Consider if navigation is needed here too on error
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadProfile();
+  };
+
+  const handleLogout = async () => {
+    if (confirm("Are you sure you want to log out?")) {
+      try {
+        await logoutUser(); // Calls the API service logout function
+        navigate('/login');
+      } catch (err) {
+        console.error('Error during logout:', err);
+        setError('Failed to log out');
+      }
+    }
   };
 
   if (isLoading) {
@@ -52,12 +183,18 @@ function Profile() {
   }
 
   return (
-    <div className="p-6 bg-brand-beige min-h-full">
-      <h1 className="text-2xl font-bold text-brand-pink-dark mb-6">Your Profile</h1>
+    <div className="p-6 bg-warm-neutral min-h-full">
+      <h1 className="text-2xl font-bold text-blossom mb-6">Your Profile</h1>
+
+      {error && (
+        <div className="bg-red-50 text-red-600 p-3 rounded mb-4 text-sm">
+          {error}
+        </div>
+      )}
 
       <form onSubmit={handleSave} className="bg-white p-6 rounded-lg shadow-md space-y-4">
         <div>
-          <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+          <label htmlFor="name" className="block text-sm font-medium text-soft-gray mb-1">Name</label>
           <input
             type="text"
             id="name"
@@ -70,8 +207,182 @@ function Profile() {
           />
         </div>
 
+        {/* Height and Weight Section */}
+        <div className="border-t pt-4 mt-4">
+          <h3 className="text-md font-medium text-blossom mb-3">Body Stats</h3>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="weight" className="block text-sm font-medium text-soft-gray mb-1">Weight (optional)</label>
+              <div className="flex">
+                <input
+                  type="number"
+                  id="weight"
+                  name="weight"
+                  value={profile.weight}
+                  onChange={handleInputChange}
+                  className="input-field rounded-r-none flex-1" 
+                  readOnly={!isEditing}
+                  placeholder="0.0"
+                  min="0"
+                  step="0.1"
+                />
+                <select
+                  name="weightUnit"
+                  value={profile.weightUnit}
+                  onChange={handleInputChange}
+                  className={`border border-l-0 border-soft-gray px-2 rounded-r-md ${!isEditing ? 'bg-warm-neutral text-soft-gray' : 'bg-white'}`}
+                  disabled={!isEditing}
+                >
+                  <option value="kg">kg</option>
+                  <option value="lb">lb</option>
+                </select>
+              </div>
+            </div>
+            
+            <div>
+              <label htmlFor="height" className="block text-sm font-medium text-soft-gray mb-1">Height (optional)</label>
+              <div className="flex">
+                <input
+                  type="number"
+                  id="height"
+                  name="height"
+                  value={profile.height}
+                  onChange={handleInputChange}
+                  className="input-field rounded-r-none flex-1" 
+                  readOnly={!isEditing}
+                  placeholder="0"
+                  min="0"
+                  step="0.5"
+                />
+                <select
+                  name="heightUnit"
+                  value={profile.heightUnit}
+                  onChange={handleInputChange}
+                  className={`border border-l-0 border-soft-gray px-2 rounded-r-md ${!isEditing ? 'bg-warm-neutral text-soft-gray' : 'bg-white'}`}
+                  disabled={!isEditing}
+                >
+                  <option value="cm">cm</option>
+                  <option value="in">in</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Measurements Section */}
+        <div className="border-t pt-4">
+          <div className="flex justify-between items-center mb-3">
+            <h3 className="text-md font-medium text-blossom">Measurements (optional)</h3>
+            <button 
+              type="button" 
+              onClick={() => setShowMeasurements(!showMeasurements)}
+              className="text-soft-gray text-sm hover:text-blossom"
+            >
+              {showMeasurements ? "Hide" : "Show"}
+            </button>
+          </div>
+          
+          {showMeasurements && (
+            <>
+              <div className="grid grid-cols-2 gap-4 mb-3">
+                <div>
+                  <label htmlFor="arms" className="block text-sm font-medium text-soft-gray mb-1">Arms</label>
+                  <input
+                    type="number"
+                    id="arms"
+                    name="arms"
+                    value={profile.measurements.arms}
+                    onChange={handleMeasurementChange}
+                    className="input-field" 
+                    readOnly={!isEditing}
+                    placeholder="0"
+                    min="0"
+                    step="0.5"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="chest" className="block text-sm font-medium text-soft-gray mb-1">Chest</label>
+                  <input
+                    type="number"
+                    id="chest"
+                    name="chest"
+                    value={profile.measurements.chest}
+                    onChange={handleMeasurementChange}
+                    className="input-field" 
+                    readOnly={!isEditing}
+                    placeholder="0"
+                    min="0"
+                    step="0.5"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="waist" className="block text-sm font-medium text-soft-gray mb-1">Waist</label>
+                  <input
+                    type="number"
+                    id="waist"
+                    name="waist"
+                    value={profile.measurements.waist}
+                    onChange={handleMeasurementChange}
+                    className="input-field" 
+                    readOnly={!isEditing}
+                    placeholder="0"
+                    min="0"
+                    step="0.5"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="hips" className="block text-sm font-medium text-soft-gray mb-1">Hips</label>
+                  <input
+                    type="number"
+                    id="hips"
+                    name="hips"
+                    value={profile.measurements.hips}
+                    onChange={handleMeasurementChange}
+                    className="input-field" 
+                    readOnly={!isEditing}
+                    placeholder="0"
+                    min="0"
+                    step="0.5"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="thighs" className="block text-sm font-medium text-soft-gray mb-1">Thighs</label>
+                  <input
+                    type="number"
+                    id="thighs"
+                    name="thighs"
+                    value={profile.measurements.thighs}
+                    onChange={handleMeasurementChange}
+                    className="input-field" 
+                    readOnly={!isEditing}
+                    placeholder="0"
+                    min="0"
+                    step="0.5"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="measurementUnit" className="block text-sm font-medium text-soft-gray mb-1">Unit</label>
+                  <select
+                    id="measurementUnit"
+                    name="measurementUnit"
+                    value={profile.measurementUnit}
+                    onChange={handleInputChange}
+                    className={`input-field ${!isEditing ? 'bg-warm-neutral text-soft-gray' : 'bg-white'}`}
+                    disabled={!isEditing}
+                  >
+                    <option value="cm">cm</option>
+                    <option value="in">in</option>
+                  </select>
+                </div>
+              </div>
+              <p className="text-xs text-soft-gray italic">Measurements help track your postpartum fitness journey progress.</p>
+            </>
+          )}
+        </div>
+
         <div>
-          <label htmlFor="recoveryNotes" className="block text-sm font-medium text-gray-700 mb-1">Recovery Notes</label>
+          <label htmlFor="recoveryNotes" className="block text-sm font-medium text-soft-gray mb-1">Recovery Notes</label>
           <textarea
             id="recoveryNotes"
             name="recoveryNotes"
@@ -85,13 +396,13 @@ function Profile() {
 
         {/* Example: Training Phase (Read-only for now, could be editable) */}
         <div>
-          <label htmlFor="trainingPhase" className="block text-sm font-medium text-gray-700 mb-1">Current Training Phase</label>
+          <label htmlFor="trainingPhase" className="block text-sm font-medium text-soft-gray mb-1">Current Training Phase</label>
           <input
             type="text"
             id="trainingPhase"
             name="trainingPhase"
             value={profile.trainingPhase}
-            className="input-field bg-gray-100" // Style as read-only
+            className="input-field bg-warm-neutral" // Style as read-only
             readOnly 
           />
         </div>
@@ -104,10 +415,10 @@ function Profile() {
             name="reminders"
             checked={profile.reminders}
             onChange={handleInputChange}
-            className="h-4 w-4 text-brand-pink-dark focus:ring-brand-pink-dark border-gray-300 rounded disabled:opacity-50"
+            className="h-4 w-4 text-blossom focus:ring-blossom border-soft-gray rounded disabled:opacity-50"
             disabled={!isEditing}
           />
-          <label htmlFor="reminders" className="ml-2 block text-sm text-gray-900">
+          <label htmlFor="reminders" className="ml-2 block text-sm text-soft-gray">
             Enable Workout Reminders (Feature coming soon!)
           </label>
         </div>
@@ -118,12 +429,17 @@ function Profile() {
               <button 
                 type="button" 
                 onClick={handleCancel} 
-                className="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300"
+                className="bg-warm-neutral text-soft-gray px-4 py-2 rounded-lg hover:bg-warm-neutral hover:bg-opacity-70"
+                disabled={saving}
               >
                 Cancel
               </button>
-              <button type="submit" className="btn-pink">
-                Save Changes
+              <button 
+                type="submit" 
+                className="btn-pink"
+                disabled={saving}
+              >
+                {saving ? 'Saving...' : 'Save Changes'}
               </button>
             </>
           ) : (
@@ -137,10 +453,13 @@ function Profile() {
           )}
         </div>
       </form>
-       {/* Optional: Add a Logout or Reset Data button */}
-        {/* <div className="mt-8 text-center">
-             <button onClick={() => { localStorage.clear(); navigate('/onboarding'); }} className="text-red-600 hover:underline">Reset App Data & Logout</button>
-           </div> */} 
+
+      {/* Logout Button */}
+      <div className="mt-8 text-center">
+        <button onClick={handleLogout} className="text-blossom hover:underline">
+          Log Out
+        </button>
+      </div>
     </div>
   );
 }
